@@ -1,0 +1,11 @@
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: awx
+  namespace: awx
+spec:
+  ingress_type: Ingress
+  ingress_tls_secret: awx-tls
+  hostname: awx.{{ external_ip | default(ansible_default_ipv4['address']) }}.sslip.io
+  projects_existing_claim: awx-pvc
+  projects_persistence: true
