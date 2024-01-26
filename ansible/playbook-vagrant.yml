@@ -32,3 +32,6 @@
 
 - name: 'Run playbook-all_nodes-kubernetes_secret_for_awx.yml'
   ansible.builtin.import_playbook: playbook-all_nodes-kubernetes_secret_for_awx.yml
+
+- name: 'Run playbook-all_nodes-awx_operator_per_ansible_kustomize.yml'
+  ansible.builtin.import_playbook: playbook-all_nodes-awx_operator_per_ansible_kustomize.yml
