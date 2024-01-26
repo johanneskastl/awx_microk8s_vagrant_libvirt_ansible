@@ -12,3 +12,7 @@
         state: 'absent'
       loop:
         - 'microk8s-kubeconfig'
+        - 'awx.crt'
+        - 'awx.csr'
+        - 'awx.key'
+        - 'awx.yaml'
