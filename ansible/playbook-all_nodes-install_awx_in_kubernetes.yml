@@ -1,0 +1,24 @@
+---
+- name: 'Install AWX in Kubernetes'
+  hosts: 'all'
+  gather_facts: true
+  become: false
+
+  tasks:
+
+    - name: 'Prepare YAML file for AWX'
+      delegate_to: localhost
+      ansible.builtin.template:
+        src: 'awx.yaml.j2'
+        dest: 'awx.yaml'
+      register: create_yaml
+
+    - name: 'Install awx from YAML file'
+      delegate_to: localhost
+      kubernetes.core.k8s:
+        # kubeconfig
+        kubeconfig: 'microk8s-kubeconfig'
+        # actual object in kubernetes
+        state: present
+        src: awx.yaml
+      ignore_errors: "{{ create_yaml.changed | bool and ansible_check_mode }}"
