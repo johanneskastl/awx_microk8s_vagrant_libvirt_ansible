@@ -1,0 +1,70 @@
+---
+- name: 'Prepare things in Kubernetes'
+  hosts: 'all'
+  gather_facts: true
+  become: false
+
+  tasks:
+
+    - name: create awx namespace
+      delegate_to: localhost
+      kubernetes.core.k8s:
+        # kubeconfig
+        kubeconfig: 'microk8s-kubeconfig'
+        # actual object in kubernetes
+        state: present
+        name: awx
+        api_version: v1
+        kind: Namespace
+
+    - name: create awx-pvc
+      delegate_to: localhost
+      kubernetes.core.k8s:
+        # kubeconfig
+        kubeconfig: 'microk8s-kubeconfig'
+        # actual object in kubernetes
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: awx-pvc
+            namespace: awx
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 100Mi
+
+    - name: create awx-ingress
+      delegate_to: localhost
+      kubernetes.core.k8s:
+        # kubeconfig
+        kubeconfig: 'microk8s-kubeconfig'
+        # actual object in kubernetes
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: awx-ingress
+            namespace: awx
+          spec:
+            ingressClassName: nginx
+            tls:
+            - hosts:
+              - "awx.{{ external_ip | default(ansible_default_ipv4['address']) }}.sslip.io"
+              secretName: awx-tls
+            rules:
+              - host: "awx.{{ external_ip | default(ansible_default_ipv4['address']) }}.sslip.io"
+                http:
+                  paths:
+                    - backend:
+                        service:
+                          name: awx-service
+                          port:
+                            number: 80
+                      path: /
+                      pathType: Prefix
+
