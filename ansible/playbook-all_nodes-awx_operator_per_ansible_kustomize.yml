@@ -1,0 +1,27 @@
+---
+- name: 'Install the AWX Operator in K3s'
+  hosts: 'all'
+  gather_facts: true
+  become: false
+
+  tasks:
+
+    - name: 'Get awx-operator release information'
+      delegate_to: localhost
+      ansible.builtin.uri:
+        url: 'https://api.github.com/repos/ansible/awx-operator/releases/latest'
+        return_content: 'true'
+      register: 'json_reponse'
+      check_mode: 'false'
+
+    - name: 'Extract latest version from release information'
+      ansible.builtin.set_fact:
+        latest_awxoperator_release: "{{ json_reponse.json.tag_name }}"
+
+    - name: 'Install awx-operator via kustomize'
+      delegate_to: localhost
+      k8s:
+        # kubeconfig
+        kubeconfig: 'microk8s-kubeconfig'
+        # actual object in kubernetes
+        definition: "{{ lookup('kubernetes.core.kustomize', dir='github.com/ansible/awx-operator/config/default?ref=' + latest_awxoperator_release) }}"
