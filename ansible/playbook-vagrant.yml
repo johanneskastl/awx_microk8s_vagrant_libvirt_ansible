@@ -23,3 +23,6 @@
 
 - name: 'Run playbook-all_nodes-fetch_and_modify_kubeconfig.yml'
   ansible.builtin.import_playbook: playbook-all_nodes-fetch_and_modify_kubeconfig.yml
+
+- name: 'Run playbook-all_nodes-create_certificate.yml'
+  ansible.builtin.import_playbook: playbook-all_nodes-create_certificate.yml
