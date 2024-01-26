@@ -1,7 +1,7 @@
 Vagrant.configure("2") do |config|
 
   ###################################################################################
-  config.vm.define "microk8s" do |node|
+  config.vm.define "awx-microk8s" do |node|
 
     # which image to use
     node.vm.box = "generic/ubuntu2204"
@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
     end
 
     # set the hostname
-    node.vm.hostname = "microk8s"
+    node.vm.hostname = "awx-microk8s"
 
     # disable shared folders
     node.vm.synced_folder ".", "/vagrant", disabled: true
