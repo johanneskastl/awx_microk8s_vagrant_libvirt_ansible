@@ -1,0 +1,32 @@
+---
+- name: 'Create a self-signed certificate'
+  hosts: 'all'
+  gather_facts: true
+  become: false
+
+  tasks:
+
+    - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
+      openssl_privatekey:
+        path: awx.key
+      register: key_creation
+      delegate_to: 'localhost'
+
+    - name: Generate an OpenSSL Certificate Signing Request with subjectAltName extension
+      openssl_csr:
+        path: awx.csr
+        privatekey_path: awx.key
+        common_name: "awx.{{ external_ip | default(ansible_default_ipv4['address']) }}.sslip.io"
+        subject_alt_name: "DNS:awx.{{ external_ip | default(ansible_default_ipv4['address']) }}.sslip.io,IP:{{ external_ip | default(ansible_default_ipv4['address']) }}"
+      ignore_errors: "{{ key_creation.changed | bool }}"
+      register: csr_creation
+      delegate_to: 'localhost'
+
+    - name: Generate a Self Signed OpenSSL certificate
+      openssl_certificate:
+        path: awx.crt
+        privatekey_path: awx.key
+        csr_path: awx.csr
+        provider: selfsigned
+      ignore_errors: "{{ csr_creation.changed | bool }}"
+      delegate_to: 'localhost'
