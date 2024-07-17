@@ -26,6 +26,11 @@ Vagrant.configure("2") do |config|
     end # node.vm.provision
 
     node.trigger.after :destroy do |trigger|
+      trigger.warn = "Removing ansible/microk8s-kubeconfig"
+      trigger.run = {inline: "rm -vf ansible/microk8s-kubeconfig"}
+    end # node.trigger.after
+
+    node.trigger.after :destroy do |trigger|
       trigger.warn = "Removing ansible/awx.crt"
       trigger.run = {inline: "rm -vf ansible/awx.crt"}
     end # node.trigger.after
