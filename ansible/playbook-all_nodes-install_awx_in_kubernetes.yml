@@ -3,6 +3,9 @@
   hosts: 'all'
   gather_facts: true
   become: false
+  module_defaults:
+    kubernetes.core.k8s_info:
+      kubeconfig: './microk8s-kubeconfig'
 
   tasks:
 
@@ -22,3 +25,49 @@
         state: present
         src: awx.yaml
       ignore_errors: "{{ create_yaml.changed | bool and ansible_check_mode }}"
+
+    - name: 'Wait until all pods are running'
+      delegate_to: 'localhost'
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: awx
+      register: pod_list
+      until: |
+        pod_list | json_query("resources[*].status.phase") | unique | sort == ["Running"]
+        or
+        pod_list | json_query("resources[*].status.phase") | unique | sort == ["Running", "Succeeded"]
+      retries: 12
+      delay: 10
+
+    - name: 'Wait until the AWX URL is reachable'
+      delegate_to: 'localhost'
+      ansible.builtin.uri:
+        url: "http://awx.{{ hostvars['awx-microk8s']['ansible_default_ipv4']['address'] }}.sslip.io"
+        # awx is using a self-signed certificate
+        validate_certs: false
+      register: result
+      until: 'result.status == 200'
+      retries: 11
+      delay: 10
+
+    - name: 'Find out the AWX admin password'
+      delegate_to: 'localhost'
+      kubernetes.core.k8s_info:
+        kind: 'secret'
+        name: ''
+        namespace: 'awx'
+        wait: true
+        wait_sleep: 10
+        wait_timeout: 120
+      register: k8s_info_awx_admin_secret
+
+    - name: 'AWX URL'
+      delegate_to: 'localhost'
+      ansible.builtin.debug:
+        msg: "Connect to the following URL in your browser: https://awx.{{ hostvars['awx-microk8s']['ansible_default_ipv4']['address'] }}.sslip.io (and accept the warning for the self-signed certificate)"
+
+    - name: 'AWX Credentials'
+      delegate_to: 'localhost'
+      ansible.builtin.debug:
+        msg: "Use the following credentials: username admin and password {{ k8s_info_awx_admin_secret['resources'][0]['data']['password'] | b64decode | replace('\n', '') }}"
