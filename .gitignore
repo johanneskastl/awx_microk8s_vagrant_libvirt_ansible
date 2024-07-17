@@ -9,3 +9,6 @@ ansible/microk8s-kubeconfig
 
 # ignore file containing a specific version
 ansible/group_vars/all/awx_operator_version.yml
+
+# AWX certificates etc.
+ansible/awx.*
