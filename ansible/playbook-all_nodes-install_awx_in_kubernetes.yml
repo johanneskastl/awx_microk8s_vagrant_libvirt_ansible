@@ -4,27 +4,29 @@
   gather_facts: true
   become: false
   module_defaults:
+    kubernetes.core.k8s:
+      kubeconfig: './microk8s-kubeconfig'
     kubernetes.core.k8s_info:
       kubeconfig: './microk8s-kubeconfig'
 
   tasks:
 
-    - name: 'Prepare YAML file for AWX'
-      delegate_to: localhost
-      ansible.builtin.template:
-        src: 'awx.yaml.j2'
-        dest: 'awx.yaml'
-      register: create_yaml
-
     - name: 'Install awx from YAML file'
       delegate_to: localhost
       kubernetes.core.k8s:
-        # kubeconfig
-        kubeconfig: 'microk8s-kubeconfig'
-        # actual object in kubernetes
         state: present
-        src: awx.yaml
-      ignore_errors: "{{ create_yaml.changed | bool and ansible_check_mode }}"
+        resource_definition: |
+          apiVersion: awx.ansible.com/v1beta1
+          kind: AWX
+          metadata:
+            name: awx
+            namespace: awx
+          spec:
+            ingress_type: Ingress
+            ingress_tls_secret: awx-tls
+            hostname: awx.{{ external_ip | default(ansible_default_ipv4['address']) }}.sslip.io
+            projects_existing_claim: awx-pvc
+            projects_persistence: true
 
     - name: 'Wait until all pods are running'
       delegate_to: 'localhost'
